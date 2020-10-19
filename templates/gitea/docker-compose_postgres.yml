@@ -1,0 +1,63 @@
+version: "3.8"
+
+networks:
+  outside:
+    name: ${OUTSIDE_PROXY_NAME}
+    external: true
+
+services:
+  server:
+    container_name: ${GITEA_CONTAINER_NAME}
+    image: gitea/gitea:latest
+    restart: always
+    environment:
+      - APP_NAME
+      - RUN_MODE
+      - DOMAIN
+      - SSH_DOMAIN
+      - SSH_PORT
+      - SSH_LISTEN_PORT
+      - DISABLE_SSH
+      - HTTP_PORT
+      - ROOT_URL
+      - LFS_START_SERVER
+      - INSTALL_LOCK
+      - SECRET_KEY
+      - DISABLE_REGISTRATION
+      - REQUIRE_SIGNIN_VIEW
+      - USER_UID
+      - USER_GID
+      # Database Configuration
+      - DB_TYPE=${GITEA_DB_TYPE}
+      - DB_HOST=${GITEA_DB_HOST}
+      - DB_NAME=${GITEA_DB_NAME}
+      - DB_USER=${GITEA_DB_USER}
+      - DB_PASSWD=${GITEA_DB_PASSWORD}
+    networks:
+      - outside
+      - default
+    volumes:
+      - ./gitea:/data
+      #if docker run on Linux, this line can sync timezone setup with host
+      #- /etc/timezone:/etc/timezone:ro
+      #- /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${OUTSIDE_HTTP_PORT}:${HTTP_PORT}"
+      - "${SSH_PORT}:${SSH_LISTEN_PORT}"
+    depends_on:
+      - db
+    privileged: true
+
+  db:
+    container_name: ${GITEA_DB_CONTAINER_NAME}
+    image: postgres:${GITEA_DB_VERSION}
+    restart: always
+    environment:
+      - POSTGRES_DB=${GITEA_DB_NAME}
+      - POSTGRES_USER=${GITEA_DB_USER}
+      - POSTGRES_PASSWORD=${GITEA_DB_PASSWORD}
+    networks: 
+      - default
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    
